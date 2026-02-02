@@ -90,7 +90,7 @@ exports.getTasks = async (ctx) => {
       offset
     })
 
-    success(ctx, {
+    ctx.body = success({
       list: rows,
       total: count,
       page: parseInt(page),
@@ -99,7 +99,8 @@ exports.getTasks = async (ctx) => {
     })
   } catch (err) {
     console.error('获取任务列表失败:', err)
-    error(ctx, '获取任务列表失败', 500)
+    ctx.status = 500
+    ctx.body = error('获取任务列表失败', 500)
   }
 }
 
@@ -128,7 +129,9 @@ exports.getTask = async (ctx) => {
     })
 
     if (!task) {
-      return error(ctx, '任务不存在', 404)
+      ctx.status = 404
+      ctx.body = error('任务不存在', 404)
+      return
     }
 
     // 🔐 数据权限检查
@@ -137,13 +140,16 @@ exports.getTask = async (ctx) => {
     const isAssignee = task.assigneeId === currentUser.id
 
     if (!isAdmin && !isCreator && !isAssignee) {
-      return error(ctx, '无权查看此任务', 403)
+      ctx.status = 403
+      ctx.body = error('无权查看此任务', 403)
+      return
     }
 
-    success(ctx, task)
+    ctx.body = success(task)
   } catch (err) {
     console.error('获取任务详情失败:', err)
-    error(ctx, '获取任务详情失败', 500)
+    ctx.status = 500
+    ctx.body = error('获取任务详情失败', 500)
   }
 }
 
@@ -156,7 +162,9 @@ exports.createTask = async (ctx) => {
     const currentUser = ctx.state.user
 
     if (!title) {
-      return error(ctx, '任务标题不能为空', 400)
+      ctx.status = 400
+      ctx.body = error('任务标题不能为空', 400)
+      return
     }
 
     const task = await Task.create({
@@ -186,10 +194,11 @@ exports.createTask = async (ctx) => {
       ]
     })
 
-    success(ctx, result, '创建任务成功')
+    ctx.body = success(result, '创建任务成功')
   } catch (err) {
     console.error('创建任务失败:', err)
-    error(ctx, '创建任务失败', 500)
+    ctx.status = 500
+    ctx.body = error('创建任务失败', 500)
   }
 }
 
@@ -209,7 +218,9 @@ exports.updateTask = async (ctx) => {
 
     const task = await Task.findByPk(id)
     if (!task) {
-      return error(ctx, '任务不存在', 404)
+      ctx.status = 404
+      ctx.body = error('任务不存在', 404)
+      return
     }
 
     const isAdmin = userRoles.some(r => ['super_admin', 'admin'].includes(r.code || r))
@@ -218,7 +229,9 @@ exports.updateTask = async (ctx) => {
 
     // 🔐 权限检查
     if (!isAdmin && !isCreator && !isAssignee) {
-      return error(ctx, '无权编辑此任务', 403)
+      ctx.status = 403
+      ctx.body = error('无权编辑此任务', 403)
+      return
     }
 
     // 构建更新数据
@@ -262,10 +275,11 @@ exports.updateTask = async (ctx) => {
       ]
     })
 
-    success(ctx, result, '更新任务成功')
+    ctx.body = success(result, '更新任务成功')
   } catch (err) {
     console.error('更新任务失败:', err)
-    error(ctx, '更新任务失败', 500)
+    ctx.status = 500
+    ctx.body = error('更新任务失败', 500)
   }
 }
 
@@ -281,7 +295,9 @@ exports.deleteTask = async (ctx) => {
 
     const task = await Task.findByPk(id)
     if (!task) {
-      return error(ctx, '任务不存在', 404)
+      ctx.status = 404
+      ctx.body = error('任务不存在', 404)
+      return
     }
 
     const isAdmin = userRoles.some(r => ['super_admin', 'admin'].includes(r.code || r))
@@ -289,15 +305,18 @@ exports.deleteTask = async (ctx) => {
 
     // 🔐 权限检查：只有创建者或管理员可以删除
     if (!isAdmin && !isCreator) {
-      return error(ctx, '无权删除此任务', 403)
+      ctx.status = 403
+      ctx.body = error('无权删除此任务', 403)
+      return
     }
 
     await task.destroy()
 
-    success(ctx, null, '删除任务成功')
+    ctx.body = success(null, '删除任务成功')
   } catch (err) {
     console.error('删除任务失败:', err)
-    error(ctx, '删除任务失败', 500)
+    ctx.status = 500
+    ctx.body = error('删除任务失败', 500)
   }
 }
 
@@ -314,7 +333,9 @@ exports.assignTask = async (ctx) => {
 
     const task = await Task.findByPk(id)
     if (!task) {
-      return error(ctx, '任务不存在', 404)
+      ctx.status = 404
+      ctx.body = error('任务不存在', 404)
+      return
     }
 
     // 🔐 权限检查：只有管理员或创建者可以分配任务
@@ -322,14 +343,18 @@ exports.assignTask = async (ctx) => {
     const isCreator = task.creatorId === currentUser.id
 
     if (!isAdmin && !isCreator) {
-      return error(ctx, '无权分配此任务', 403)
+      ctx.status = 403
+      ctx.body = error('无权分配此任务', 403)
+      return
     }
 
     // 验证被分配人是否存在
     if (assigneeId) {
       const assignee = await User.findByPk(assigneeId)
       if (!assignee) {
-        return error(ctx, '被分配人不存在', 400)
+        ctx.status = 400
+        ctx.body = error('被分配人不存在', 400)
+        return
       }
     }
 
@@ -351,10 +376,11 @@ exports.assignTask = async (ctx) => {
       ]
     })
 
-    success(ctx, result, '分配任务成功')
+    ctx.body = success(result, '分配任务成功')
   } catch (err) {
     console.error('分配任务失败:', err)
-    error(ctx, '分配任务失败', 500)
+    ctx.status = 500
+    ctx.body = error('分配任务失败', 500)
   }
 }
 
@@ -370,17 +396,23 @@ exports.updateTaskStatus = async (ctx) => {
     const userRoles = currentUser.roles || []
 
     if (!status) {
-      return error(ctx, '状态不能为空', 400)
+      ctx.status = 400
+      ctx.body = error('状态不能为空', 400)
+      return
     }
 
     const validStatuses = ['pending', 'in_progress', 'completed', 'cancelled']
     if (!validStatuses.includes(status)) {
-      return error(ctx, '无效的状态值', 400)
+      ctx.status = 400
+      ctx.body = error('无效的状态值', 400)
+      return
     }
 
     const task = await Task.findByPk(id)
     if (!task) {
-      return error(ctx, '任务不存在', 404)
+      ctx.status = 404
+      ctx.body = error('任务不存在', 404)
+      return
     }
 
     const isAdmin = userRoles.some(r => ['super_admin', 'admin'].includes(r.code || r))
@@ -389,7 +421,9 @@ exports.updateTaskStatus = async (ctx) => {
 
     // 🔐 权限检查
     if (!isAdmin && !isCreator && !isAssignee) {
-      return error(ctx, '无权更新此任务状态', 403)
+      ctx.status = 403
+      ctx.body = error('无权更新此任务状态', 403)
+      return
     }
 
     const updateData = { status }
@@ -399,10 +433,11 @@ exports.updateTaskStatus = async (ctx) => {
 
     await task.update(updateData)
 
-    success(ctx, task, '状态更新成功')
+    ctx.body = success(task, '状态更新成功')
   } catch (err) {
     console.error('更新任务状态失败:', err)
-    error(ctx, '更新任务状态失败', 500)
+    ctx.status = 500
+    ctx.body = error('更新任务状态失败', 500)
   }
 }
 
@@ -439,14 +474,15 @@ exports.getTaskStats = async (ctx) => {
       Task.count({ where: { ...baseWhere, priority: 'urgent' } })
     ])
 
-    success(ctx, {
+    ctx.body = success({
       byStatus: { pending, inProgress, completed, cancelled },
       byPriority: { low, medium, high, urgent },
       total: pending + inProgress + completed + cancelled
     })
   } catch (err) {
     console.error('获取任务统计失败:', err)
-    error(ctx, '获取任务统计失败', 500)
+    ctx.status = 500
+    ctx.body = error('获取任务统计失败', 500)
   }
 }
 

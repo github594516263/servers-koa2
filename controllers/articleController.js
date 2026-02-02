@@ -63,7 +63,7 @@ exports.getArticles = async (ctx) => {
       offset
     })
 
-    success(ctx, {
+    ctx.body = success({
       list: rows,
       total: count,
       page: parseInt(page),
@@ -72,7 +72,8 @@ exports.getArticles = async (ctx) => {
     })
   } catch (err) {
     console.error('获取文章列表失败:', err)
-    error(ctx, '获取文章列表失败', 500)
+    ctx.status = 500
+    ctx.body = error('获取文章列表失败', 500)
   }
 }
 
@@ -94,22 +95,27 @@ exports.getArticle = async (ctx) => {
     })
 
     if (!article) {
-      return error(ctx, '文章不存在', 404)
+      ctx.status = 404
+      ctx.body = error('文章不存在', 404)
+      return
     }
 
     // 🔐 数据权限检查
     const isAdmin = userRoles.some(r => ['super_admin', 'admin'].includes(r.code || r))
     if (!isAdmin && article.authorId !== currentUser.id) {
-      return error(ctx, '无权查看此文章', 403)
+      ctx.status = 403
+      ctx.body = error('无权查看此文章', 403)
+      return
     }
 
     // 增加浏览次数
     await article.increment('viewCount')
 
-    success(ctx, article)
+    ctx.body = success(article)
   } catch (err) {
     console.error('获取文章详情失败:', err)
-    error(ctx, '获取文章详情失败', 500)
+    ctx.status = 500
+    ctx.body = error('获取文章详情失败', 500)
   }
 }
 
@@ -122,7 +128,9 @@ exports.createArticle = async (ctx) => {
     const currentUser = ctx.state.user
 
     if (!title || !content) {
-      return error(ctx, '标题和内容不能为空', 400)
+      ctx.status = 400
+      ctx.body = error('标题和内容不能为空', 400)
+      return
     }
 
     const article = await Article.create({
@@ -137,10 +145,11 @@ exports.createArticle = async (ctx) => {
       publishedAt: status === 'published' ? new Date() : null
     })
 
-    success(ctx, article, '创建文章成功')
+    ctx.body = success(article, '创建文章成功')
   } catch (err) {
     console.error('创建文章失败:', err)
-    error(ctx, '创建文章失败', 500)
+    ctx.status = 500
+    ctx.body = error('创建文章失败', 500)
   }
 }
 
@@ -156,13 +165,17 @@ exports.updateArticle = async (ctx) => {
 
     const article = await Article.findByPk(id)
     if (!article) {
-      return error(ctx, '文章不存在', 404)
+      ctx.status = 404
+      ctx.body = error('文章不存在', 404)
+      return
     }
 
     // 🔐 数据权限检查：只有作者或管理员可以编辑
     const isAdmin = userRoles.some(r => ['super_admin', 'admin'].includes(r.code || r))
     if (!isAdmin && article.authorId !== currentUser.id) {
-      return error(ctx, '无权编辑此文章', 403)
+      ctx.status = 403
+      ctx.body = error('无权编辑此文章', 403)
+      return
     }
 
     // 更新字段
@@ -183,10 +196,11 @@ exports.updateArticle = async (ctx) => {
 
     await article.update(updateData)
 
-    success(ctx, article, '更新文章成功')
+    ctx.body = success(article, '更新文章成功')
   } catch (err) {
     console.error('更新文章失败:', err)
-    error(ctx, '更新文章失败', 500)
+    ctx.status = 500
+    ctx.body = error('更新文章失败', 500)
   }
 }
 
@@ -201,21 +215,26 @@ exports.deleteArticle = async (ctx) => {
 
     const article = await Article.findByPk(id)
     if (!article) {
-      return error(ctx, '文章不存在', 404)
+      ctx.status = 404
+      ctx.body = error('文章不存在', 404)
+      return
     }
 
     // 🔐 数据权限检查：只有作者或管理员可以删除
     const isAdmin = userRoles.some(r => ['super_admin', 'admin'].includes(r.code || r))
     if (!isAdmin && article.authorId !== currentUser.id) {
-      return error(ctx, '无权删除此文章', 403)
+      ctx.status = 403
+      ctx.body = error('无权删除此文章', 403)
+      return
     }
 
     await article.destroy()
 
-    success(ctx, null, '删除文章成功')
+    ctx.body = success(null, '删除文章成功')
   } catch (err) {
     console.error('删除文章失败:', err)
-    error(ctx, '删除文章失败', 500)
+    ctx.status = 500
+    ctx.body = error('删除文章失败', 500)
   }
 }
 
@@ -229,7 +248,9 @@ exports.batchDeleteArticles = async (ctx) => {
     const userRoles = currentUser.roles || []
 
     if (!ids || !Array.isArray(ids) || ids.length === 0) {
-      return error(ctx, '请选择要删除的文章', 400)
+      ctx.status = 400
+      ctx.body = error('请选择要删除的文章', 400)
+      return
     }
 
     // 🔐 数据权限检查
@@ -243,10 +264,11 @@ exports.batchDeleteArticles = async (ctx) => {
 
     const deletedCount = await Article.destroy({ where })
 
-    success(ctx, { deletedCount }, `成功删除 ${deletedCount} 篇文章`)
+    ctx.body = success({ deletedCount }, `成功删除 ${deletedCount} 篇文章`)
   } catch (err) {
     console.error('批量删除文章失败:', err)
-    error(ctx, '批量删除文章失败', 500)
+    ctx.status = 500
+    ctx.body = error('批量删除文章失败', 500)
   }
 }
 
@@ -261,13 +283,17 @@ exports.togglePublish = async (ctx) => {
 
     const article = await Article.findByPk(id)
     if (!article) {
-      return error(ctx, '文章不存在', 404)
+      ctx.status = 404
+      ctx.body = error('文章不存在', 404)
+      return
     }
 
     // 🔐 数据权限检查
     const isAdmin = userRoles.some(r => ['super_admin', 'admin'].includes(r.code || r))
     if (!isAdmin && article.authorId !== currentUser.id) {
-      return error(ctx, '无权操作此文章', 403)
+      ctx.status = 403
+      ctx.body = error('无权操作此文章', 403)
+      return
     }
 
     const newStatus = article.status === 'published' ? 'draft' : 'published'
@@ -276,10 +302,11 @@ exports.togglePublish = async (ctx) => {
       publishedAt: newStatus === 'published' ? new Date() : article.publishedAt
     })
 
-    success(ctx, article, newStatus === 'published' ? '发布成功' : '已取消发布')
+    ctx.body = success(article, newStatus === 'published' ? '发布成功' : '已取消发布')
   } catch (err) {
     console.error('切换发布状态失败:', err)
-    error(ctx, '操作失败', 500)
+    ctx.status = 500
+    ctx.body = error('操作失败', 500)
   }
 }
 
@@ -296,10 +323,11 @@ exports.getCategories = async (ctx) => {
       }
     })
 
-    success(ctx, categories.map(c => c.category))
+    ctx.body = success(categories.map(c => c.category))
   } catch (err) {
     console.error('获取分类失败:', err)
-    error(ctx, '获取分类失败', 500)
+    ctx.status = 500
+    ctx.body = error('获取分类失败', 500)
   }
 }
 

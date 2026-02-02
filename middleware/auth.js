@@ -1,5 +1,6 @@
 const { verifyToken } = require('../utils/jwt')
 const { error } = require('../utils/response')
+const { getUserRoles } = require('../utils/permission')
 
 /**
  * 验证 Token 中间件
@@ -32,8 +33,14 @@ async function authMiddleware(ctx, next) {
     return
   }
   
-  // 将用户信息挂载到 ctx.state
-  ctx.state.user = decoded
+  // 获取用户角色
+  const roles = await getUserRoles(decoded.id)
+  
+  // 将用户信息挂载到 ctx.state（包含角色）
+  ctx.state.user = {
+    ...decoded,
+    roles  // 角色编码数组，如 ['super_admin'] 或 ['admin'] 或 ['user']
+  }
   
   await next()
 }
