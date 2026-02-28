@@ -11,6 +11,7 @@ const RoleMenu = require('./RoleMenu')
 const Article = require('./Article')
 const Task = require('./Task')
 const OperationLog = require('./OperationLog')
+const Notification = require('./Notification')
 // const Permission = require('./Permission')  // 方案一：不再需要独立的权限表
 // const RolePermission = require('./RolePermission')  // 方案一：使用 RoleMenu 替代
 
@@ -116,6 +117,25 @@ function setupAssociations() {
     as: 'operationLogs'
   })
 
+  // ========== 通知模块关联 ==========
+
+  // 通知 - 接收用户
+  Notification.belongsTo(User, {
+    foreignKey: 'userId',
+    as: 'receiver'
+  })
+
+  User.hasMany(Notification, {
+    foreignKey: 'userId',
+    as: 'notifications'
+  })
+
+  // 通知 - 发送用户
+  Notification.belongsTo(User, {
+    foreignKey: 'senderId',
+    as: 'sender'
+  })
+
   console.log('✅ 模型关联关系已设置')
 }
 
@@ -128,7 +148,8 @@ module.exports = {
   RoleMenu,
   Article,
   Task,
-  OperationLog
+  OperationLog,
+  Notification
   // Permission,      // 方案一：不再导出
   // RolePermission   // 方案一：不再导出
 }

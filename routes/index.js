@@ -7,6 +7,7 @@ const userRouter = require('./user')
 const articleRouter = require('./article')
 const taskRouter = require('./task')
 const operationLogRouter = require('./operationLog')
+const notificationRouter = require('./notification')
 
 const router = new Router({
   prefix: '/api',
@@ -39,5 +40,6 @@ router.use(userRouter.routes(), userRouter.allowedMethods())
 router.use(articleRouter.routes(), articleRouter.allowedMethods())
 router.use(taskRouter.routes(), taskRouter.allowedMethods())
 router.use(operationLogRouter.routes(), operationLogRouter.allowedMethods())
+router.use(notificationRouter.routes(), notificationRouter.allowedMethods())
 
 module.exports = router
