@@ -179,6 +179,21 @@ async function autoInitDatabase() {
           keep_alive: true,
           sort: 4,
         },
+        // 操作日志
+        {
+          parent_id: systemMenuId,
+          type: 'menu',
+          name: 'OperationLog',
+          title: '操作日志',
+          path: '/system/operation-log',
+          component: 'system/operation-log/index',
+          icon: 'document',
+          permission_code: null,
+          status: 1,
+          hidden: false,
+          keep_alive: false,
+          sort: 5,
+        },
       ])
       console.log('✅ Menus created')
       

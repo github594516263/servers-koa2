@@ -10,6 +10,7 @@ const UserRole = require('./UserRole')
 const RoleMenu = require('./RoleMenu')
 const Article = require('./Article')
 const Task = require('./Task')
+const OperationLog = require('./OperationLog')
 // const Permission = require('./Permission')  // 方案一：不再需要独立的权限表
 // const RolePermission = require('./RolePermission')  // 方案一：使用 RoleMenu 替代
 
@@ -104,6 +105,17 @@ function setupAssociations() {
     as: 'assignedTasks'
   })
 
+  // 操作日志 - 用户
+  OperationLog.belongsTo(User, {
+    foreignKey: 'userId',
+    as: 'operator'
+  })
+
+  User.hasMany(OperationLog, {
+    foreignKey: 'userId',
+    as: 'operationLogs'
+  })
+
   console.log('✅ 模型关联关系已设置')
 }
 
@@ -115,7 +127,8 @@ module.exports = {
   UserRole,
   RoleMenu,
   Article,
-  Task
+  Task,
+  OperationLog
   // Permission,      // 方案一：不再导出
   // RolePermission   // 方案一：不再导出
 }

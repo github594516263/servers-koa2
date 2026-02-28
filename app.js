@@ -4,13 +4,20 @@ const cors = require('koa-cors')
 const config = require('./config')
 const errorMiddleware = require('./middleware/error')
 const loggerMiddleware = require('./middleware/logger')
+const auditMiddleware = require('./middleware/audit')
 const router = require('./routes')
 const { setupAssociations } = require('./models/associations')
+const sequelize = require('./config/database')
 
 const app = new Koa()
 
 // 设置模型关联关系（必须在使用模型之前调用）
 setupAssociations()
+
+// 自动同步新表（不会修改已有表结构，仅创建不存在的表）
+sequelize.sync().catch(err => {
+  console.error('⚠️ Database sync failed:', err.message)
+})
 
 // 注意：数据库初始化请使用命令: npm run init
 // 不再使用自动初始化，避免开发时意外重置数据
@@ -30,6 +37,9 @@ app.use(bodyParser({
   jsonLimit: '10mb',
   textLimit: '10mb',
 }))
+
+// 审计日志（自动记录写操作）
+app.use(auditMiddleware())
 
 // 路由
 app.use(router.routes())

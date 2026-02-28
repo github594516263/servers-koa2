@@ -81,10 +81,43 @@ async function getUserPermissions(userId) {
  */
 async function getUserMenus(userId) {
   try {
-    // 1. 获取用户权限编码
-    const permissionCodes = await getUserPermissions(userId)
-    
-    // 2. 获取所有启用且未隐藏的菜单
+    // 1. 获取用户的角色ID
+    const userRoles = await UserRole.findAll({
+      where: { userId },
+      attributes: ['roleId']
+    })
+
+    if (userRoles.length === 0) {
+      return []
+    }
+
+    const roleIds = userRoles.map(ur => ur.roleId)
+
+    // 2. 获取有效角色
+    const validRoles = await Role.findAll({
+      where: { id: roleIds, status: 1 },
+      attributes: ['id']
+    })
+
+    if (validRoles.length === 0) {
+      return []
+    }
+
+    const validRoleIds = validRoles.map(r => r.id)
+
+    // 3. 获取角色关联的菜单ID（role_menus 表）
+    const roleMenus = await RoleMenu.findAll({
+      where: { roleId: validRoleIds },
+      attributes: ['menuId']
+    })
+
+    const assignedMenuIds = [...new Set(roleMenus.map(rm => rm.menuId))]
+
+    if (assignedMenuIds.length === 0) {
+      return []
+    }
+
+    // 4. 获取所有启用且未隐藏的菜单
     const menus = await Menu.findAll({
       where: {
         status: 1,
@@ -93,24 +126,22 @@ async function getUserMenus(userId) {
       order: [['sort', 'ASC'], ['id', 'ASC']],
       raw: true
     })
-   
-    // 3. 过滤菜单：保留无需权限的菜单（如目录）和有权限的菜单
+
+    // 5. 过滤菜单：只保留角色分配的菜单 + 目录类型（目录由后续空目录移除逻辑处理）
     const filteredMenus = menus.filter(menu => {
-      const permissionCode = menu.permission_code
-      // 没有权限要求的菜单直接显示（如目录）
-      if (!permissionCode || permissionCode === '') {
+      // 目录类型保留（后续会移除空目录）
+      if (menu.type === 'directory') {
         return true
       }
-      // 检查用户是否有该菜单的权限
-      return permissionCodes.includes(permissionCode)
+      // 非目录菜单必须在角色分配的菜单列表中
+      return assignedMenuIds.includes(menu.id)
     })
 
-    // 4. 构建菜单树
+    // 6. 构建菜单树
     const menuTree = buildMenuTree(filteredMenus)
-    
-    // 5. 移除没有子菜单的空目录
+
+    // 7. 移除没有子菜单的空目录
     const menuTree2 = removeEmptyDirectories(menuTree)
-    console.log(menus,permissionCodes,'filteredMenus');
     return menuTree2
   } catch (error) {
     console.error('获取用户菜单失败:', error)
@@ -124,7 +155,6 @@ async function getUserMenus(userId) {
  * @returns {Array} 过滤后的菜单树
  */
 function removeEmptyDirectories(menuTree) {
-  console.log(menuTree,'menuTree');
   return menuTree.filter(menu => {
     // 递归处理子菜单
     if (menu.children && menu.children.length > 0) {
@@ -132,9 +162,9 @@ function removeEmptyDirectories(menuTree) {
     }
     
     // 如果是目录类型，但没有子菜单，则移除
-    // if (menu.type === 'directory' && (!menu.children || menu.children.length === 0)) {
-    //   return false
-    // }
+    if (menu.type === 'directory' && (!menu.children || menu.children.length === 0)) {
+      return false
+    }
     
     return true
   })

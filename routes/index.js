@@ -6,6 +6,7 @@ const menuRouter = require('./menu')
 const userRouter = require('./user')
 const articleRouter = require('./article')
 const taskRouter = require('./task')
+const operationLogRouter = require('./operationLog')
 
 const router = new Router({
   prefix: '/api',
@@ -37,5 +38,6 @@ router.use(userRouter.routes(), userRouter.allowedMethods())
 // 注册业务模块路由
 router.use(articleRouter.routes(), articleRouter.allowedMethods())
 router.use(taskRouter.routes(), taskRouter.allowedMethods())
+router.use(operationLogRouter.routes(), operationLogRouter.allowedMethods())
 
 module.exports = router
