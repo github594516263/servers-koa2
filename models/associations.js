@@ -12,6 +12,8 @@ const Article = require('./Article')
 const Task = require('./Task')
 const OperationLog = require('./OperationLog')
 const Notification = require('./Notification')
+const Dict = require('./Dict')
+const DictItem = require('./DictItem')
 // const Permission = require('./Permission')  // 方案一：不再需要独立的权限表
 // const RolePermission = require('./RolePermission')  // 方案一：使用 RoleMenu 替代
 
@@ -136,6 +138,19 @@ function setupAssociations() {
     as: 'sender'
   })
 
+  // ========== 数据字典模块关联 ==========
+
+  // 字典 - 字典项（一对多）
+  Dict.hasMany(DictItem, {
+    foreignKey: 'dictId',
+    as: 'items'
+  })
+
+  DictItem.belongsTo(Dict, {
+    foreignKey: 'dictId',
+    as: 'dict'
+  })
+
   console.log('✅ 模型关联关系已设置')
 }
 
@@ -149,7 +164,9 @@ module.exports = {
   Article,
   Task,
   OperationLog,
-  Notification
+  Notification,
+  Dict,
+  DictItem
   // Permission,      // 方案一：不再导出
   // RolePermission   // 方案一：不再导出
 }
