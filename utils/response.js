@@ -5,7 +5,7 @@
  * @param {number} code - 状态码
  * @returns {Object} 响应对象
  */
-function success(data = null, message = '操作成功', code = 0) {
+function success(data = null, message = '操作成功', code = 200) {
   return {
     code,
     message,
